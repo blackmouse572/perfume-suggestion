@@ -21,7 +21,11 @@ import { useToast } from "./ui/use-toast";
 import { IResult } from "@/app/type/result";
 import { Button } from "./ui/button";
 import { Icons } from "./icons";
-import { Card, CardContent, CardHeader } from "./ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
+import { Badge } from "./ui/badge";
+import Link from "next/link";
+import { Textarea } from "./ui/textarea";
+import { Skeleton } from "./ui/skeleton";
 
 const SESSIONS = [
   { label: "❄ Winter", value: "winter" },
@@ -82,21 +86,76 @@ function RegisterForm({}: Props) {
   };
 
   const renderData = useMemo(() => {
-    if (!data) return null;
+    if (isLoading)
+      return Array.from(Array(4).keys()).map(() => (
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-4 w-10 rounded-md" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-56 w-56 mx-auto rounded-md" />
+            <Skeleton className="h-24 w-full mx-auto rounded-md" />
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-8 w-14 rounded-md" />
+          </CardFooter>
+        </Card>
+      ));
 
-    return data.map((item) => (
-      <Card>
-        <CardHeader>{item.name}</CardHeader>
-        <CardContent>
-          <Image src={item.meta?.image ?? ""} alt={item.name} />
-        </CardContent>
-      </Card>
-    ));
-  }, [data]);
+    if (!data)
+      return (
+        <div className="col-span-full h-[80vh] border border-border border-dashed rounded-md w-full flex justify-center items-center text-zinc-400">
+          No result found
+        </div>
+      );
+
+    return data.map((item) => {
+      if (!item.meta?.image) return null;
+      const { width, height, src } = item.meta?.image;
+      return (
+        <Card>
+          <CardHeader>
+            <h1 className="text-lg font-medium">{item.name}</h1>
+          </CardHeader>
+          <CardContent className="">
+            <img
+              className={
+                "w-full max-w-[14em] mx-auto aspect-square border rounded-md"
+              }
+              width={width}
+              height={height}
+              src={src}
+              alt={item.name}
+            />
+            <p className="text-slate-500 text-sm">{item.description}</p>
+            <div className="border-t border-accent-200 mt-4 py-2">
+              <ul className="space-y-2">
+                <li className="flex gap-2 flex-wrap">
+                  {item.tags.map((tag) => (
+                    <Badge size="sm" className="" variant="secondary">
+                      {tag.toUpperCase()}
+                    </Badge>
+                  ))}
+                </li>
+                <li className={"h-full text-sx"}>{item.match}</li>
+              </ul>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Link href={item.meta.image.contextLink ?? "#"}>
+              <Button>View</Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      );
+    });
+  }, [data, isLoading]);
 
   return (
-    <div className="w-full flex items-center justify-center">
-      {renderData}
+    <div className="w-full gap-4 flex items-center justify-center">
+      <div className="grid grid-cols-2 gap-3 flex-1 max-h-[80vh]">
+        {renderData}
+      </div>
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -110,15 +169,15 @@ function RegisterForm({}: Props) {
                 <FormLabel>Name</FormLabel>
                 <FormControl>
                   <Input
-                    disabled={isLoading}
                     placeholder="Enter a name"
                     {...field}
+                    disabled={isLoading}
                   />
                 </FormControl>
                 {errors.name && (
                   <FormMessage>{errors.name.message}</FormMessage>
                 )}
-                <FormDescription>This is the main name.</FormDescription>
+                <FormDescription>Tell me your name</FormDescription>
               </FormItem>
             )}
           />
@@ -129,17 +188,22 @@ function RegisterForm({}: Props) {
               <FormItem>
                 <FormLabel>Characteristics</FormLabel>
                 <FormControl>
-                  <Input
-                    disabled={isLoading}
+                  <Textarea
+                    rows={3}
+                    maxLength={100}
                     placeholder="Describe characteristics"
                     {...field}
+                    disabled={isLoading}
+                    className="max-h-32"
                   />
                 </FormControl>
                 {errors.characteristics && (
                   <FormMessage>{errors.characteristics.message}</FormMessage>
                 )}
                 <FormDescription>
-                  Describe the key characteristics.
+                  Who are you? What are your aura?
+                  <br /> <span className="font-bold">Tips</span>: The more you
+                  write, the better match you get
                 </FormDescription>
               </FormItem>
             )}
@@ -282,9 +346,9 @@ function RegisterForm({}: Props) {
               </FormItem>
             )}
           />
-          <Button type="submit">
+          <Button type="submit" disabled={isLoading}>
             {isLoading && <Icons.Loading className="animate-spin mr-2" />}
-            {isLoading ? "Loading..." : "Find Smell"}
+            {isLoading ? "Loading..." : data ? "Search again" : "Search"}
           </Button>
         </form>
       </Form>

@@ -7,7 +7,7 @@ import { IResult } from "../type/result";
 import findImages from "./find-images";
 
 const client = new TextServiceClient({
-  authClient: new GoogleAuth().fromAPIKey(process.env.GOOGLE_KEY),
+  authClient: new GoogleAuth().fromAPIKey(process.env.GOOGLE_KEY!),
 });
 
 const MODEL_NAME = "models/text-bison-001";
@@ -29,7 +29,6 @@ create a JSON object which have the following structure inside the triple quote 
     &quot;type&quot;: &quot;&lt;perfume type (perfume/cologne/body mist)&gt;&quot;,
     &quot;match&quot;: &quot;&lt;description why user is matching with this product, min 200 chars &gt;&quot;,
     &quot;meta&quot;: {
-        &quot;image&quot; : &quot;&lt;title to find image via google api&gt;&quot;,
         &quot;brand&quot;: &quot;&lt;brand of the perfume&gt;&quot;,
         &quot;style&quot;: &quot;&lt;perfume style&gt;&quot;,
         &quot;incense&quot;: &quot;&lt;perfume incense group&gt;&quot;,
@@ -37,7 +36,7 @@ create a JSON object which have the following structure inside the triple quote 
     }
 }
 `;
-  const stopSequences = [];
+  const stopSequences: string[] = [];
 
   const res = await client
     .generateText({
@@ -87,22 +86,56 @@ create a JSON object which have the following structure inside the triple quote 
       },
     })
     .then((result) => {
-      return result[0].candidates[0].output
-        ?.replaceAll("```", "")
-        .replaceAll("json", "");
+      if (
+        result == null ||
+        result == undefined ||
+        result[0] == null ||
+        result[0] == undefined
+      ) {
+        return undefined;
+      }
+
+      if (result[0]!.candidates == undefined) {
+        return undefined;
+      }
+
+      return result[0].candidates[0]!.output?.replaceAll("```", "").replaceAll(
+        "json",
+        "",
+      );
     });
+
+  if (res == undefined) {
+    return [];
+  }
 
   const result: IResult[] = JSON.parse(res);
 
-  const names = result.map((r) => `${r.meta?.image} ${r.meta?.brand}`);
+  const names = result.map((r) => `${r.name} ${r.meta?.brand}`);
 
   const image_result = await Promise.all(names.map((name) => findImages(name)));
-  console.log({ image_result });
-  const images = image_result.map((r) => r.map((i) => i.original));
 
   //Append  images to result
   result.forEach((r, i) => {
-    r.image = images[i];
+    if (r.meta == undefined) {
+      r.meta = {
+        image: {
+          src: image_result[i][0].link,
+          width: image_result[i][0].image.width,
+          height: image_result[i][0].image.height,
+          contextLink: image_result[i][0].image.contextLink,
+        },
+        brand: "",
+        style: "",
+        incense: "",
+      };
+    }
+    r.meta.image = {
+      src: image_result[i][0].link,
+      width: image_result[i][0].image.width,
+      height: image_result[i][0].image.height,
+      contextLink: image_result[i][0].image.contextLink,
+    };
   });
 
   return result;

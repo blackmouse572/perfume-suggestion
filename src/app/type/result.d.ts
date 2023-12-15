@@ -5,10 +5,15 @@ export interface IResult {
   type: string;
   match: string;
   meta?: {
-    image: string;
-    brand: string;
-    style: string;
-    incense: string;
-    origin: string;
+    image?: {
+      src: string;
+      height: number;
+      width: number;
+      contextLink?: string;
+    };
+    brand?: string;
+    style?: string;
+    incense?: string;
+    origin?: string;
   };
 }

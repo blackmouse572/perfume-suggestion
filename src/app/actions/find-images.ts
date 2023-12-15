@@ -1,16 +1,25 @@
-import { SerapiResponse } from "../type/serapi";
+import { GoogleImageSearchResponse } from "../type/google";
 
 export default async function findImages(q: string) {
-  const query = "puppies";
+  const qObj = {
+    q,
+    key: process.env.GOOGLE_API_KEY!,
+    cx: process.env.GOOGLE_SEARCH_ENGINE_ID!,
+    safe: "high",
+    num: "5",
+    searchType: "image",
+    imgSize: "huge",
+    imgType: "photo",
+    lr: "lang_en",
+  };
 
-  const URL = `https://serpapi.com/search.json?q=${query}&engine=google_images&ijn=0`;
-  const SEARRCH_URL = `https://www.googleapis.com/customsearch/v1?`;
+  const queryString = new URLSearchParams(qObj).toString();
 
-  const result: SerapiResponse = await fetch(URL).then((response) =>
-    response.json(),
+  const SEARCH_URL = `https://www.googleapis.com/customsearch/v1?${queryString}`;
+
+  const result: GoogleImageSearchResponse = await fetch(SEARCH_URL).then(
+    (response) => response.json(),
   );
 
-  console.log(result);
-
-  return result.images_results;
+  return result.items;
 }
