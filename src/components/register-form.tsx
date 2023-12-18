@@ -1,31 +1,31 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import findSmell from "@/app/actions/find-smell";
+import { IResult } from "@/app/type/result";
 import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
-import { Input } from "./ui/input";
-import Image from "next/image";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { Checkbox } from "./ui/checkbox";
+import Link from "next/link";
+import React, { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import z from "zod";
+import { Icons } from "./icons";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
+import { Checkbox } from "./ui/checkbox";
 import {
-  FormControl,
   Form,
+  FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormDescription,
   FormMessage,
 } from "./ui/form";
-import findSmell from "@/app/actions/find-smell";
-import { useToast } from "./ui/use-toast";
-import { IResult } from "@/app/type/result";
-import { Button } from "./ui/button";
-import { Icons } from "./icons";
-import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
-import { Badge } from "./ui/badge";
-import Link from "next/link";
-import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Skeleton } from "./ui/skeleton";
+import { Textarea } from "./ui/textarea";
+import { useToast } from "./ui/use-toast";
+import PerfumeDialog from "./perfume-dialog";
 
 const SESSIONS = [
   { label: "❄ Winter", value: "winter" },
@@ -93,7 +93,6 @@ function RegisterForm({}: Props) {
             <Skeleton className="h-4 w-10 rounded-md" />
           </CardHeader>
           <CardContent className="space-y-2">
-            <Skeleton className="h-56 w-56 mx-auto rounded-md" />
             <Skeleton className="h-24 w-full mx-auto rounded-md" />
           </CardContent>
           <CardFooter>
@@ -104,7 +103,7 @@ function RegisterForm({}: Props) {
 
     if (!data)
       return (
-        <div className="col-span-full h-[80vh] border border-border border-dashed rounded-md w-full flex justify-center items-center text-zinc-400">
+        <div className="col-span-full h-[83vh] border border-border border-dashed rounded-md w-full flex justify-center items-center text-zinc-400">
           No result found
         </div>
       );
@@ -113,49 +112,31 @@ function RegisterForm({}: Props) {
       if (!item.meta?.image) return null;
       const { width, height, src } = item.meta?.image;
       return (
-        <Card>
-          <CardHeader>
-            <h1 className="text-lg font-medium">{item.name}</h1>
-          </CardHeader>
-          <CardContent className="">
-            <img
-              className={
-                "w-full max-w-[14em] mx-auto aspect-square border rounded-md"
-              }
-              width={width}
-              height={height}
-              src={src}
-              alt={item.name}
-            />
-            <p className="text-slate-500 text-sm">{item.description}</p>
-            <div className="border-t border-accent-200 mt-4 py-2">
-              <ul className="space-y-2">
-                <li className="flex gap-2 flex-wrap">
-                  {item.tags.map((tag) => (
-                    <Badge size="sm" className="" variant="secondary">
-                      {tag.toUpperCase()}
-                    </Badge>
-                  ))}
-                </li>
-                <li className={"h-full text-sx"}>{item.match}</li>
-              </ul>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Link href={item.meta.image.contextLink ?? "#"}>
-              <Button>View</Button>
-            </Link>
-          </CardFooter>
-        </Card>
+        <PerfumeDialog item={item}>
+          <Card className="relative">
+            <CardHeader>
+              <h1 className="text-lg font-bold">{item.name}</h1>
+            </CardHeader>
+            <CardContent className="space-y-2 ">
+              <img
+                src={src}
+                alt={item.name}
+                className="w-[18rem] mx-auto aspect-square rounded-md"
+              />
+              <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-transparent to-zinc-200/30 rounded-md" />
+              <div className="absolute bottom-10 left-0 bg-zinc-500/30 backdrop-blur-md w-max rounded-r-md px-2.5 text-zinc-50 font-bold py-0.5">
+                <h1>{item.meta?.brand ?? "N/A Brand"}</h1>
+              </div>
+            </CardContent>
+          </Card>
+        </PerfumeDialog>
       );
     });
   }, [data, isLoading]);
 
   return (
     <div className="w-full gap-4 flex items-center justify-center">
-      <div className="grid grid-cols-2 gap-3 flex-1 max-h-[80vh]">
-        {renderData}
-      </div>
+      <div className="grid grid-cols-2 gap-2 flex-1">{renderData}</div>
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -201,9 +182,9 @@ function RegisterForm({}: Props) {
                   <FormMessage>{errors.characteristics.message}</FormMessage>
                 )}
                 <FormDescription>
-                  Who are you? What are your aura?
+                  Tell me what you like about your perfume
                   <br /> <span className="font-bold">Tips</span>: The more you
-                  write, the better match you get
+                  characteristics you provided, the better match you will get
                 </FormDescription>
               </FormItem>
             )}
@@ -244,9 +225,6 @@ function RegisterForm({}: Props) {
                 {errors.gender && (
                   <FormMessage>{errors.gender.message}</FormMessage>
                 )}
-                <FormDescription>
-                  Select the appropriate gender.
-                </FormDescription>
               </FormItem>
             )}
           />
